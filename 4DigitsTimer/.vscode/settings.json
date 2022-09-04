@@ -1,0 +1,9 @@
+{
+    "cSpell.words": [
+        "EEPROM",
+        "LSBFIRST",
+        "millis",
+        "MSBFIRST"
+    ],
+    "C_Cpp.errorSquiggles": "Enabled"
+}
