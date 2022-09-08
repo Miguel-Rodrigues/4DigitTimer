@@ -64,7 +64,8 @@ void setup() {
 }
 
 void loop() {
-    checkButtonStates();
-    //writeNumber(DONE, DONE_DOTS);
-}
+    checkButtonsStates();
+    writeDigits(DONE, DONE_DOTS);
 
+    flushRegister();
+}
