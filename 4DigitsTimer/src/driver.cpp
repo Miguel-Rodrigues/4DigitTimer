@@ -31,7 +31,7 @@ const uint16_t _DIGIT_MAP[14] = {
     0x8500, //d
     0xC500, //o
     0xD500, //n
-    0x9F00, //E
+    0x6000, //E
 };
 
 const uint16_t _WITHOUT_DOT = 0x0100; //.
@@ -41,7 +41,7 @@ const bool DONE_DOTS[4] = { false, false, false, true };
 
 uint8_t _buttonPointer = 0;
 uint8_t _digitsPointer = 0;
-uint16_t _digitsBuffer[4] = { 0, 0, 0 , 0 };
+uint16_t _digitsBuffer[4] = { 0, 0, 0, 0 };
 uint16_t buffer = 0;
 
 Button* minusButton = new Button(0x0001, "minus");
@@ -94,8 +94,8 @@ void clearBuffer() {
 }
 
 void writeDigits(const uint8_t digits[], const bool dotMap[]) {
-    for (int i = 0; i < 3; i++) {
-        _digitsBuffer[i] = _DIGIT_MAP[digits[i]] | (1 << (i + 4)) | (dotMap[i] ? 0 : _WITHOUT_DOT);
+    for (int i = 0; i < 4; i++) {
+        _digitsBuffer[i] = _DIGIT_MAP[digits[3-i]] | (1 << (i + 4)) | (dotMap[3 - i] ? 0 : _WITHOUT_DOT);
     }
 }
 
