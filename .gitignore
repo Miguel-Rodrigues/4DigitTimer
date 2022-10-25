@@ -38,4 +38,5 @@
 .vscode/launch.json
 .vscode/ipch
 
-Schematics/lightbox/lightbox-backups/*
+Schematics/**/*-backups
+fp-info-cache
