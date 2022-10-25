@@ -39,4 +39,4 @@
 .vscode/ipch
 
 Schematics/**/*-backups
-fp-info-cache
+Schematics/**/fp-info-cache
