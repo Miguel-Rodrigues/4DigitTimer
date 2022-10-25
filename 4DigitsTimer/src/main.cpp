@@ -1,71 +1,111 @@
 #include "includes.hpp"
+#include "avr8-stub.h"
 
-const int16_t HOLD_ACTION_TIMER = 3000;
-const uint8_t FAST_SKIPPING_STEPS = 10;
-const int16_t MAX_TIMER = 9999;
-const int16_t MIN_TIMER = 5;
-const int16_t DEFAULT_TIMER = 60;
-
-int16_t timer = 0;
-bool isTicking = false;
+const uint32_t HOLD_ACTION_TRIGGER = 250;
+const uint32_t LONG_ACTION_TRIGGER = 3000;
+uint8_t displayTimer[3] = { 0, 0, 0};
+uint16_t selectedButton = 0;
+uint32_t selectedButtonHold = 0;
+bool resetToDefault = false;
 
 void increaseTimerEvent(uint32_t holdingTime) {
-    bool fastSkipping = holdingTime >= HOLD_ACTION_TIMER;
-    if(holdingTime == 0 || fastSkipping) {
-        timer += fastSkipping ? FAST_SKIPPING_STEPS : 1;
-        timer = timer > MAX_TIMER ? MAX_TIMER: timer;
-    }
+    bool fastSkipping = holdingTime >= LONG_ACTION_TRIGGER;
+    increaseTimer(fastSkipping);
 }
 
 void decreaseTimerEvent(uint32_t holdingTime) {
-    bool fastSkipping = holdingTime >= HOLD_ACTION_TIMER;
-    if(holdingTime == 0 || fastSkipping) {
-        timer += fastSkipping ? FAST_SKIPPING_STEPS : 1;
-        timer = timer < MIN_TIMER ? MIN_TIMER : timer;
-    }
+    bool fastSkipping = holdingTime >= LONG_ACTION_TRIGGER;
+    decreaseTimer(fastSkipping);
 }
 
 void resetTimerEvent(uint32_t holdingTime) {
-    if(holdingTime == 0) {
-        EEPROM.get(0, timer);
-    }
-    else if ((holdingTime >= HOLD_ACTION_TIMER) & (timer != DEFAULT_TIMER)) {
-        EEPROM.put(0, DEFAULT_TIMER);
-        EEPROM.get(0, timer);
+    if (!resetToDefault) {
+        resetToDefault = holdingTime >= LONG_ACTION_TRIGGER;
+        resetTimer(resetToDefault);
     }
 }
 
 void toggleTimerEvent() {
-    isTicking = !isTicking;
+    toggleTimer();
+    // toggleBlink(!isTicking());
+}
 
-    if (isTicking) {
-        EEPROM.put(0, timer);
-        //TODO: timer start
-    }
-    else {
-        //TODO: timer stop
+void countdownStart() {
+    
+}
 
+void onAlarmTrigger() {
+    toggleBlink(true);
+}
+
+bool refresh() {
+    checkButtonsStates();
+    getDisplayTime(displayTimer);
+    writeDigits(displayTimer);
+    flushRegister();
+    return true;
+}
+
+/// @brief Checks if the input has a button already pressed and thus block other actions if the button is being hold.
+/// @param button  the button from the triggered event
+/// @return if the action can be triggered
+bool canPerformAction(Button* button) {
+    uint16_t address = button->getAddress();
+    uint32_t holdingTime = button->getHoldingTime();
+    if (selectedButton == 0 || selectedButton == address) {
+        selectedButton = address;
+        if (holdingTime == 0 || holdingTime - selectedButtonHold > HOLD_ACTION_TRIGGER) {
+            selectedButtonHold = holdingTime;
+            return true;
+        };
     }
+
+    return false;
+}
+
+void releaseAction(Button* button) {
+    if (selectedButton == button->getAddress()) {
+        selectedButton = 0;
+        selectedButtonHold = 0;
+    }
+}
+
+void releaseResetTimerEvent(Button *button) {
+    releaseAction(button);
+    resetToDefault = false;
+}
+
+void initializeEventListeners() {
+    plusButton->onDown = [](Button* button) { if (canPerformAction(button)) increaseTimerEvent(0); };
+    plusButton->onHold = [](Button* button) { if (canPerformAction(button)) increaseTimerEvent(button->getHoldingTime()); };
+    plusButton->onUp = releaseAction;
+
+    minusButton->onDown = [](Button* button) { if (canPerformAction(button)) decreaseTimerEvent(0); };
+    minusButton->onHold = [](Button* button) { if (canPerformAction(button)) decreaseTimerEvent(button->getHoldingTime()); };
+    minusButton->onUp = releaseAction;
+
+    startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimer(); };
+    startButton->onHold = [](Button* button) { if (canPerformAction(button)) { /* Enable UV no timer */ } };
+    startButton->onUp = releaseAction;
+
+    resetButton->onDown = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(0); };
+    resetButton->onHold = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(button->getHoldingTime()); };
+    resetButton->onUp = releaseResetTimerEvent;
+
+    onTrigger = onAlarmTrigger;
+    onRefreshSystem = refresh;
 }
 
 void setup() {
     // initialize GDB stub
-    // debug_init();
-    // delay(5000);
+    debug_init();
+    delay(5000);
 
     initializeDriver();
-    plusButton->onDown = [](Button* button) { increaseTimerEvent(0); };
-    plusButton->onHold = [](Button* button) { increaseTimerEvent(button->getHoldingTime()); };
-    minusButton->onDown = [](Button* button) { decreaseTimerEvent(0); };
-    minusButton->onHold = [](Button* button) { decreaseTimerEvent(button->getHoldingTime()); };
-
-    EEPROM.begin();
-    EEPROM.get(0, timer);
+    initializeEventListeners();
+    initializeTimers();
 }
 
 void loop() {
-    checkButtonsStates();
-    writeDigits(DONE, DONE_DOTS);
-
-    flushRegister();
+    getTimer().tick();
 }

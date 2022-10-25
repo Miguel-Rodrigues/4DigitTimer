@@ -12,8 +12,8 @@ extern Button* startButton;
 
 extern Button* keypad[4];
 
-extern const uint8_t DONE[4];
-extern const bool DONE_DOTS[4];
+extern const uint8_t END[3];
+extern const uint8_t CLEAR_SCREEN[3];
 
 void initializeDriver();
 
@@ -21,8 +21,10 @@ void flushRegister();
 
 void clearBuffer();
 
-void writeDigits(const uint8_t digits[], const bool dotMap[]);
+void writeDigits(const uint8_t digits[]);
 
 void checkButtonsStates();
+
+void toggleBlink(bool blink);
 
 #endif /* DRIVER_H */
