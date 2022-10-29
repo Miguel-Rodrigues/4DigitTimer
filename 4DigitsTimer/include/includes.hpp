@@ -9,4 +9,8 @@
 #include "button.hpp"
 #include "timer.hpp"
 
+#include "avr8-stub.h"
+#define breakpoint() if (!digitalRead(PIN7)) breakpoint()
+
+
 #endif /* INCLUDES_H */

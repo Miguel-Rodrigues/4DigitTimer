@@ -3,10 +3,7 @@
 
 #include "includes.hpp"
 
-extern void (*onTrigger)();
-extern bool (*onRefreshSystem)();
-
-void initializeTimers();
+void initializeTimers(void (*onTrigger)(), void (*onRefreshSystem)());
 
 void increaseTimer(bool fastSkipping);
 
@@ -18,7 +15,9 @@ void toggleTimer();
 
 bool isTicking();
 
-Timer<10U, &millis> getTimer();
+bool hasFinished();
+
+void tick();
 
 void getDisplayTime(uint8_t displayTimer[]);
 

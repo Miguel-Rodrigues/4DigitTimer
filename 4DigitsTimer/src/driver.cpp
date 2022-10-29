@@ -49,6 +49,7 @@ const uint32_t BLINK_TIME = 1000;
 uint64_t _blinkingMillis = 0;
 bool _isBlinking = false;
 bool _blink = false;
+bool _uvLedsEnabled = false;
 
 uint8_t _buttonPointer = 0;
 uint8_t _digitsPointer = 0;
@@ -73,6 +74,20 @@ void initializeDriver() {
     pinMode(_UV_ARRAY_PIN, OUTPUT);
 
     clearBuffer();
+}
+
+const uint8_t* checkBlinkMode(const uint8_t* digits) {
+    uint64_t currentMillis = millis();
+    if (_isBlinking && currentMillis >= (_blinkingMillis + BLINK_TIME)) {
+        _blinkingMillis = currentMillis;
+        _blink = !_blink;
+    }
+
+    if (_blink) {
+        return CLEAR_SCREEN;
+    }
+
+    return digits;
 }
 
 void flushRegister() {
@@ -102,20 +117,6 @@ void clearBuffer() {
     }
 
     flushRegister();
-}
-
-const uint8_t* checkBlinkMode(const uint8_t* digits) {
-    uint64_t currentMillis = millis();
-    if (_isBlinking && currentMillis >= (_blinkingMillis + BLINK_TIME)) {
-        _blinkingMillis = currentMillis;
-        _blink = !_blink;
-    }
-
-    if (_blink) {
-        return CLEAR_SCREEN;
-    }
-
-    return digits;
 }
 
 void writeDigits(const uint8_t digits[]) {
@@ -148,15 +149,17 @@ void checkButtonsStates()
     }
 }
 
-void toggleUVLeds(bool enabled) {
-    digitalWrite(_UV_ARRAY_PIN, enabled);
-}
-
-void toggleRedLeds(bool enabled) {
-    _buffer = (_buffer & ~_RED_ARRAY) | enabled ? _RED_ARRAY : 0;
-}
-
 void toggleBlink(bool enabled) {
     _isBlinking = enabled;
     _blink = false;
+}
+
+bool getLedState() {
+    return _uvLedsEnabled;
+}
+
+void setLedState(bool uvLedsEnabled) {
+    _uvLedsEnabled = uvLedsEnabled;
+    _buffer = (_buffer & ~_RED_ARRAY) | _uvLedsEnabled ? _RED_ARRAY : 0;
+    digitalWrite(_UV_ARRAY_PIN, !_uvLedsEnabled);
 }

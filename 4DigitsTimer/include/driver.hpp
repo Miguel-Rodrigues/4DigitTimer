@@ -27,4 +27,8 @@ void checkButtonsStates();
 
 void toggleBlink(bool blink);
 
+bool getLedState();
+
+void setLedState(bool uvLedsEnabled);
+
 #endif /* DRIVER_H */

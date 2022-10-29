@@ -1,5 +1,4 @@
 #include "includes.hpp"
-#include "avr8-stub.h"
 
 const uint32_t HOLD_ACTION_TRIGGER = 250;
 const uint32_t LONG_ACTION_TRIGGER = 3000;
@@ -7,6 +6,7 @@ uint8_t displayTimer[3] = { 0, 0, 0};
 uint16_t selectedButton = 0;
 uint32_t selectedButtonHold = 0;
 bool resetToDefault = false;
+bool refreshScreen = true;
 
 void increaseTimerEvent(uint32_t holdingTime) {
     bool fastSkipping = holdingTime >= LONG_ACTION_TRIGGER;
@@ -27,23 +27,29 @@ void resetTimerEvent(uint32_t holdingTime) {
 
 void toggleTimerEvent() {
     toggleTimer();
-    // toggleBlink(!isTicking());
-}
-
-void countdownStart() {
-    
+    setLedState(isTicking());
+    toggleBlink(!isTicking());
 }
 
 void onAlarmTrigger() {
-    toggleBlink(true);
+    setLedState(false);
+    // refreshScreen = false;
+    // for (uint8_t i = 0; i < 2; i++) {
+    //     displayTimer[i] = END[i];
+    // }
 }
 
-bool refresh() {
+void toggleUVEvent() {
+    setLedState(getLedState());
+}
+
+void refresh() {
     checkButtonsStates();
-    getDisplayTime(displayTimer);
+    if (refreshScreen) {
+        getDisplayTime(displayTimer);
+    }
     writeDigits(displayTimer);
     flushRegister();
-    return true;
 }
 
 /// @brief Checks if the input has a button already pressed and thus block other actions if the button is being hold.
@@ -56,6 +62,9 @@ bool canPerformAction(Button* button) {
         selectedButton = address;
         if (holdingTime == 0 || holdingTime - selectedButtonHold > HOLD_ACTION_TRIGGER) {
             selectedButtonHold = holdingTime;
+            if (hasFinished()) {
+                toggleBlink(false);
+            }
             return true;
         };
     }
@@ -84,28 +93,26 @@ void initializeEventListeners() {
     minusButton->onHold = [](Button* button) { if (canPerformAction(button)) decreaseTimerEvent(button->getHoldingTime()); };
     minusButton->onUp = releaseAction;
 
-    startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimer(); };
-    startButton->onHold = [](Button* button) { if (canPerformAction(button)) { /* Enable UV no timer */ } };
+    startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(); };
+    startButton->onHold = [](Button* button) { if (canPerformAction(button)) { toggleUVEvent(); } };
     startButton->onUp = releaseAction;
 
     resetButton->onDown = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(0); };
     resetButton->onHold = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(button->getHoldingTime()); };
     resetButton->onUp = releaseResetTimerEvent;
-
-    onTrigger = onAlarmTrigger;
-    onRefreshSystem = refresh;
 }
 
 void setup() {
     // initialize GDB stub
+    pinMode(PIN7, INPUT_PULLUP);
     debug_init();
     delay(5000);
 
     initializeDriver();
     initializeEventListeners();
-    initializeTimers();
+    initializeTimers(onAlarmTrigger, refresh);
 }
 
 void loop() {
-    getTimer().tick();
+    tick();
 }

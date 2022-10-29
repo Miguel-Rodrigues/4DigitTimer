@@ -1,41 +1,45 @@
 #include "includes.hpp"
 #include <math.h>
 
-const uint16_t _FAST_SKIPPING_STEPS = 10;
-const uint16_t _MAX_TIMER = 999;
-const uint16_t _MIN_TIMER = 5;
-const uint16_t _DEFAULT_TIMER = 60;
+const int _FAST_SKIPPING_STEPS = 10;
+const int _MAX_TIMER = 999;
+const int _MIN_TIMER = 5;
+const int _DEFAULT_TIMER = 60;
+const int _SYSTEM_TIMER = 5;
 
-auto _timer = Timer<10, millis>();
+Timer<> _timer;
 uintptr_t _timerTask;
 
-uint16_t _time = 0;
+int _time = 0;
 bool _isTicking = false;
 bool _hasFinished = true;
 
-void (*onTrigger)();
-bool (*onRefreshSystem)();
+void (*_onTrigger)();
+void (*_onRefreshSystem)();
 
 bool refreshSystemEvent(void* args) {
-    return onRefreshSystem();
+    _onRefreshSystem();
+    return true;
 }
 
-void initializeTimers() {
+void initializeTimers(void (*onTrigger)(), void (*onRefreshSystem)()) {
     EEPROM.begin();
     EEPROM.get(0, _time);
-    _timer.every(5, refreshSystemEvent);
+
+    _onTrigger = onTrigger;
+    _onRefreshSystem = onRefreshSystem;
+
+    _timer.every(_SYSTEM_TIMER, refreshSystemEvent);
 }
 
 bool timer_onTick(void* args) {
+    breakpoint();
     _time--;
-    bool timeout = _time == 0;
+    bool timeout = _time <= 0;
     if (timeout) {
         _isTicking = false;
         _hasFinished = true;
-
-        if (onTrigger != nullptr) {
-            onTrigger();
-        }
+        _onTrigger();
 
         return false;
     };
@@ -45,15 +49,16 @@ bool timer_onTick(void* args) {
 
 void increaseTimer(bool fastSkipping) {
     _time += fastSkipping ? _FAST_SKIPPING_STEPS : 1;
-    _time = _time > _MAX_TIMER ? _MAX_TIMER: _time;
+    _time = min(_MAX_TIMER, _time);
 }
 
 void decreaseTimer(bool fastSkipping) {
-    _time -= fastSkipping ? _FAST_SKIPPING_STEPS : 1;
-    _time = _time < _MIN_TIMER ? _MIN_TIMER : _time;
+    _time -=  fastSkipping ? _FAST_SKIPPING_STEPS : 1;
+    _time = max(_MIN_TIMER, _time);
 }
 
 void resetTimer(bool resetToDefault) {
+    breakpoint();
     if (resetToDefault && (_time != _DEFAULT_TIMER)) {
         EEPROM.put(0, _DEFAULT_TIMER);
     }
@@ -62,29 +67,20 @@ void resetTimer(bool resetToDefault) {
 }
 
 void toggleTimer() {
+    breakpoint();
     _isTicking = !_isTicking;
-    
     //If starts ticking
     if (_isTicking) {
+         _timer.in(0, timer_onTick); // run myTask once on next tick
         _timerTask = _timer.every(1000, timer_onTick);
-
-        if (_hasFinished)
-        {
-            EEPROM.put(0, _time);
-            _hasFinished = false;
-        }
     }
     else {
         _timer.cancel(_timerTask);
     }
-
-    if (!_isTicking && _hasFinished) {
-        resetTimer(false);
-    }
 }
 
-Timer<10U, &millis> getTimer() {
-    return _timer;
+void tick() {
+    _timer.tick<void>();
 }
 
 uint32_t getTime() {
@@ -99,4 +95,8 @@ void getDisplayTime(uint8_t displayTimer[]) {
 
 bool isTicking() {
     return _isTicking;
+}
+
+bool hasFinished() {
+    return _hasFinished;
 }
