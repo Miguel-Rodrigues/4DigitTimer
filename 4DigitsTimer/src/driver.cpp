@@ -74,6 +74,7 @@ void initializeDriver() {
     pinMode(_UV_ARRAY_PIN, OUTPUT);
 
     clearBuffer();
+    setLedState(false);
 }
 
 const uint8_t* checkBlinkMode(const uint8_t* digits) {
@@ -160,6 +161,6 @@ bool getLedState() {
 
 void setLedState(bool uvLedsEnabled) {
     _uvLedsEnabled = uvLedsEnabled;
-    _buffer = (_buffer & ~_RED_ARRAY) | _uvLedsEnabled ? _RED_ARRAY : 0;
-    digitalWrite(_UV_ARRAY_PIN, !_uvLedsEnabled);
+    _buffer = (_buffer & ~_RED_ARRAY) | !_uvLedsEnabled ? _RED_ARRAY : 0;
+    digitalWrite(_UV_ARRAY_PIN, _uvLedsEnabled);
 }

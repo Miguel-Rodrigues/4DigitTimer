@@ -53,30 +53,40 @@ void increaseTimer(bool fastSkipping) {
 }
 
 void decreaseTimer(bool fastSkipping) {
-    _time -=  fastSkipping ? _FAST_SKIPPING_STEPS : 1;
+    _time -= fastSkipping ? _FAST_SKIPPING_STEPS : 1;
     _time = max(_MIN_TIMER, _time);
 }
 
 void resetTimer(bool resetToDefault) {
-    breakpoint();
-    if (resetToDefault && (_time != _DEFAULT_TIMER)) {
-        EEPROM.put(0, _DEFAULT_TIMER);
-    }
-
+    _isTicking = false;
+    _hasFinished = true;
+    _timer.cancel(_timerTask);
     EEPROM.get(0, _time);
+
+    if (resetToDefault &&  _time != _DEFAULT_TIMER) {
+        _time = EEPROM.put(0, _DEFAULT_TIMER);
+    }
 }
 
-void toggleTimer() {
+bool toggleTimer() {
     breakpoint();
+
     _isTicking = !_isTicking;
     //If starts ticking
     if (_isTicking) {
-         _timer.in(0, timer_onTick); // run myTask once on next tick
+        if (_hasFinished) {
+            EEPROM.put(0, _time);
+            _hasFinished = false;
+        }
+
+        _timer.in(0, timer_onTick); // run myTask once on next tick
         _timerTask = _timer.every(1000, timer_onTick);
     }
     else {
         _timer.cancel(_timerTask);
     }
+
+    return _isTicking;
 }
 
 void tick() {

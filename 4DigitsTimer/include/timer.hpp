@@ -9,9 +9,9 @@ void increaseTimer(bool fastSkipping);
 
 void decreaseTimer(bool fastSkipping);
 
-void resetTimer(bool resetToDefault);
+void resetTimer(bool resetToDefault = false);
 
-void toggleTimer();
+bool toggleTimer();
 
 bool isTicking();
 
