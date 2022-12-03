@@ -2,21 +2,22 @@
 
 const uint32_t HOLD_ACTION_TRIGGER = 250;
 const uint32_t LONG_ACTION_TRIGGER = 1500;
-uint8_t displayTimer[3] = { 0, 0, 0};
+uint8_t displayTimer[3] = { 0, 0, 0 };
 uint16_t selectedButton = 0;
 uint32_t selectedButtonHold = 0;
+bool indefiniteUVMode = false;
 bool refreshScreen = true;
-bool canToggleTimer = true;
-bool canToggleUV = true;
 
 void increaseTimerEvent(bool fastSkipping) {
-    fastSkipping != isTicking();
+    fastSkipping |= isTicking();
     increaseTimer(fastSkipping);
+    holdBlink();
 }
 
 void decreaseTimerEvent(bool fastSkipping) {
-    fastSkipping != isTicking();
+    fastSkipping |= isTicking();
     decreaseTimer(fastSkipping);
+    holdBlink();
 }
 
 void resetTimerEvent(bool resetToDefault) {
@@ -24,28 +25,20 @@ void resetTimerEvent(bool resetToDefault) {
     setLedState(false);
 }
 
-void toggleTimerEvent(bool toggleUV) {
+void toggleTimerEvent() {
     bool ticking;
-    breakpoint();
-    if (toggleUV) {
-        if (canToggleUV) {
-            resetTimer();
-            setLedState(getLedState());
-            canToggleUV = false;
-        }
-    }
-    else {
-        if (canToggleTimer) {
-            ticking = toggleTimer();
-            setLedState(ticking);
-            toggleBlink(!ticking);
-            canToggleTimer = false;
-        }
-    }
+
+    ticking = toggleTimer();
+    setLedState(ticking);
 }
 
 void onAlarmTrigger() {
     setLedState(false);
+    resetTimer(false);
+    refreshScreen = false;
+    displayTimer[0] = END[0];
+    displayTimer[1] = END[1];
+    displayTimer[2] = END[2];
 }
 
 void refresh() {
@@ -53,6 +46,8 @@ void refresh() {
     if (refreshScreen) {
         getDisplayTime(displayTimer);
     }
+
+    toggleBlink(!hasFinished() && !isTicking());
     writeDigits(displayTimer);
     flushRegister();
 }
@@ -67,6 +62,7 @@ bool canPerformAction(Button* button) {
         selectedButton = address;
         if (holdingTime == 0 || holdingTime - selectedButtonHold > HOLD_ACTION_TRIGGER) {
             selectedButtonHold = holdingTime;
+            refreshScreen = true;
             return true;
         };
     }
@@ -78,8 +74,6 @@ void releaseAction(Button* button) {
     if (selectedButton == button->getAddress()) {
         selectedButton = 0;
         selectedButtonHold = 0;
-        canToggleTimer = true;
-        canToggleUV = true;
     }
 }
 
@@ -92,12 +86,12 @@ void initializeEventListeners() {
     minusButton->onHold = [](Button* button) { if (canPerformAction(button)) decreaseTimerEvent(selectedButtonHold > LONG_ACTION_TRIGGER); };
     minusButton->onUp = releaseAction;
 
-    startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(false); };
-    startButton->onHold = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(selectedButtonHold > LONG_ACTION_TRIGGER); };
+    startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(); };
+    // startButton->onHold = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(selectedButtonHold > LONG_ACTION_TRIGGER); };
     startButton->onUp = releaseAction;
 
     resetButton->onDown = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(false); };
-    resetButton->onHold = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(true); };
+    resetButton->onHold = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(selectedButtonHold > LONG_ACTION_TRIGGER); };
     resetButton->onUp = releaseAction;
 }
 

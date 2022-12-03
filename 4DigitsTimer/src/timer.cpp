@@ -33,7 +33,6 @@ void initializeTimers(void (*onTrigger)(), void (*onRefreshSystem)()) {
 }
 
 bool timer_onTick(void* args) {
-    breakpoint();
     _time--;
     bool timeout = _time <= 0;
     if (timeout) {
@@ -69,8 +68,6 @@ void resetTimer(bool resetToDefault) {
 }
 
 bool toggleTimer() {
-    breakpoint();
-
     _isTicking = !_isTicking;
     //If starts ticking
     if (_isTicking) {
@@ -79,7 +76,6 @@ bool toggleTimer() {
             _hasFinished = false;
         }
 
-        _timer.in(0, timer_onTick); // run myTask once on next tick
         _timerTask = _timer.every(1000, timer_onTick);
     }
     else {

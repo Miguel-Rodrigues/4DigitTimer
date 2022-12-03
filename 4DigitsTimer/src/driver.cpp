@@ -17,13 +17,20 @@ const int _DATA_PIN = 10;
 //       FF        |       E            1           F
 // _SEVEN_SEGMENT  | _DIGIT_SELECT _RED_ARRAY _BUTTONS_MASK
 
+// Visual reference of each 7 segment digit (0: ON, 1: OFF)
+// ┌ A ┐
+// F   B
+// ├ G ┤
+// E   C
+// └ D ┘ H
+
 //Register address masks
 const uint16_t _SEVEN_SEGMENT = 0xFF00; //1111111100000000
 const uint16_t _DIGIT_SELECT  = 0x00E0; //0000000011100000
 const uint16_t _RED_ARRAY     = 0x0010; //0000000000010000
 const uint16_t _BUTTONS_MASK  = 0x000F; //0000000000001111
 
-const uint16_t _DIGIT_MAP[14] = {
+const uint16_t _DIGIT_MAP[15] = {
     0x0300, //0
     0x9F00, //1
     0x2500, //2
@@ -37,18 +44,21 @@ const uint16_t _DIGIT_MAP[14] = {
     0x6100, //E
     0xD500, //n
     0x8400, //d.
+    0xFD00, //-
     0xFF00 // <clear>
 };
 
 const uint16_t DOT = 0x0100; //.
 
-const uint8_t CLEAR_SCREEN[3] = { 13, 13, 13 };
 const uint8_t END[3] = { 10, 11, 12 };
 
+const uint8_t BLANKS[3] = { 13, 13, 13 };
+const uint8_t CLEAR_SCREEN[3] = { 14, 14, 14 };
 const uint32_t BLINK_TIME = 1000;
 uint64_t _blinkingMillis = 0;
 bool _isBlinking = false;
 bool _blink = false;
+bool _holdBlink = false;
 bool _uvLedsEnabled = false;
 
 uint8_t _buttonPointer = 0;
@@ -64,6 +74,17 @@ Button* startButton = new Button(0x0008, "start");
 Button* keypad[4] = {
     minusButton, resetButton, plusButton, startButton
 };
+
+void clearBuffer() {
+    _buffer = 0;
+    _buttonPointer = 0;
+    _digitsPointer = 0;
+    for (int i = 0; i < 3; i++) {
+        _digitsBuffer[i] = 0;
+    }
+
+    flushRegister();
+}
 
 void initializeDriver() {
     pinMode(_LATCH_PIN, OUTPUT);
@@ -81,7 +102,14 @@ const uint8_t* checkBlinkMode(const uint8_t* digits) {
     uint64_t currentMillis = millis();
     if (_isBlinking && currentMillis >= (_blinkingMillis + BLINK_TIME)) {
         _blinkingMillis = currentMillis;
-        _blink = !_blink;
+        if (!_holdBlink) {
+            _blink = !_blink;
+        }
+        else {
+            _holdBlink = !_holdBlink;
+            _blink = false;
+        }
+
     }
 
     if (_blink) {
@@ -109,17 +137,6 @@ void flushRegister() {
     _buttonPointer = (_buttonPointer + 1) % 4;
 }
 
-void clearBuffer() {
-    _buffer = 0;
-    _buttonPointer = 0;
-    _digitsPointer = 0;
-    for (int i = 0; i < 3; i++) {
-        _digitsBuffer[i] = 0;
-    }
-
-    flushRegister();
-}
-
 void writeDigits(const uint8_t digits[]) {
     const uint8_t* value = checkBlinkMode(digits);
 
@@ -136,8 +153,6 @@ void checkButtonsStates()
     keypad[_buttonPointer]->setState(isButtonDown);
 
     if(currentState != isButtonDown) {
-        toggleBlink(false);
-
         if (isButtonDown && keypad[_buttonPointer]->onDown != nullptr) {
             keypad[_buttonPointer]->onDown(keypad[_buttonPointer]);
         }
@@ -151,8 +166,15 @@ void checkButtonsStates()
 }
 
 void toggleBlink(bool enabled) {
-    _isBlinking = enabled;
+    if (_isBlinking != enabled) {
+        _isBlinking = enabled;
+        _blink = false;
+    }
+}
+
+void holdBlink() {
     _blink = false;
+    _holdBlink = true;
 }
 
 bool getLedState() {
@@ -161,6 +183,6 @@ bool getLedState() {
 
 void setLedState(bool uvLedsEnabled) {
     _uvLedsEnabled = uvLedsEnabled;
-    _buffer = (_buffer & ~_RED_ARRAY) | !_uvLedsEnabled ? _RED_ARRAY : 0;
+    _buffer = (_buffer & ~_RED_ARRAY) | _uvLedsEnabled ? _RED_ARRAY : 0;
     digitalWrite(_UV_ARRAY_PIN, _uvLedsEnabled);
 }
