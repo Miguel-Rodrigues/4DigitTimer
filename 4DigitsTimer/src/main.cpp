@@ -5,31 +5,63 @@ const uint32_t LONG_ACTION_TRIGGER = 1500;
 uint8_t displayTimer[3] = { 0, 0, 0 };
 uint16_t selectedButton = 0;
 uint32_t selectedButtonHold = 0;
-bool indefiniteUVMode = false;
+bool timelessMode = false;
 bool refreshScreen = true;
 
-void increaseTimerEvent(bool fastSkipping) {
-    fastSkipping |= isTicking();
-    increaseTimer(fastSkipping);
-    holdBlink();
-}
-
-void decreaseTimerEvent(bool fastSkipping) {
-    fastSkipping |= isTicking();
-    decreaseTimer(fastSkipping);
-    holdBlink();
-}
-
 void resetTimerEvent(bool resetToDefault) {
+    timelessMode = false;
+    refreshScreen = true;
     resetTimer(resetToDefault);
     setLedState(false);
 }
 
-void toggleTimerEvent() {
-    bool ticking;
+void increaseTimerEvent(bool fastSkipping) {
+    if (!timelessMode) {
+        fastSkipping |= isTicking();
+        increaseTimer(fastSkipping);
+        holdBlink();
+    }
 
-    ticking = toggleTimer();
-    setLedState(ticking);
+    else {
+        resetTimerEvent(false);
+    }
+}
+
+void decreaseTimerEvent(bool fastSkipping) {
+    if (!timelessMode) {
+        fastSkipping |= isTicking();
+        decreaseTimer(fastSkipping);
+        holdBlink();
+    }
+
+    else {
+        resetTimerEvent(false);
+    }
+}
+
+void toggleTimerEvent() {
+    if (!timelessMode) {
+        setLedState(toggleTimer());
+    }
+
+    else {
+        resetTimerEvent(false);
+    }
+}
+
+void enableTimelessMode()
+{
+    if (!timelessMode) {
+        timelessMode = true;
+        refreshScreen = false;
+
+        resetTimer(false);
+        setLedState(true);
+
+        displayTimer[0] = BLANKS[0];
+        displayTimer[1] = BLANKS[1];
+        displayTimer[2] = BLANKS[2];
+    }
 }
 
 void onAlarmTrigger() {
@@ -43,11 +75,13 @@ void onAlarmTrigger() {
 
 void refresh() {
     checkButtonsStates();
+
     if (refreshScreen) {
         getDisplayTime(displayTimer);
     }
 
     toggleBlink(!hasFinished() && !isTicking());
+    
     writeDigits(displayTimer);
     flushRegister();
 }
@@ -62,7 +96,9 @@ bool canPerformAction(Button* button) {
         selectedButton = address;
         if (holdingTime == 0 || holdingTime - selectedButtonHold > HOLD_ACTION_TRIGGER) {
             selectedButtonHold = holdingTime;
-            refreshScreen = true;
+            if (!timelessMode) {
+                refreshScreen = true;
+            }
             return true;
         };
     }
@@ -87,7 +123,7 @@ void initializeEventListeners() {
     minusButton->onUp = releaseAction;
 
     startButton->onDown = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(); };
-    // startButton->onHold = [](Button* button) { if (canPerformAction(button)) toggleTimerEvent(selectedButtonHold > LONG_ACTION_TRIGGER); };
+    startButton->onHold = [](Button* button) { if (canPerformAction(button) && selectedButtonHold > LONG_ACTION_TRIGGER) enableTimelessMode(); };
     startButton->onUp = releaseAction;
 
     resetButton->onDown = [](Button* button) { if (canPerformAction(button)) resetTimerEvent(false); };
