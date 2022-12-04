@@ -5,7 +5,8 @@ const int _FAST_SKIPPING_STEPS = 10;
 const int _MAX_TIMER = 999;
 const int _MIN_TIMER = 5;
 const int _DEFAULT_TIMER = 60;
-const int _SYSTEM_TIMER = 5;
+const int _SYSTEM_MILLIS = 5;
+const int _TIMER_MILLIS = 1000;
 
 Timer<> _timer;
 uintptr_t _timerTask;
@@ -29,7 +30,7 @@ void initializeTimers(void (*onTrigger)(), void (*onRefreshSystem)()) {
     _onTrigger = onTrigger;
     _onRefreshSystem = onRefreshSystem;
 
-    _timer.every(_SYSTEM_TIMER, refreshSystemEvent);
+    _timer.every(_SYSTEM_MILLIS, refreshSystemEvent);
 }
 
 bool timer_onTick(void* args) {
@@ -42,7 +43,7 @@ bool timer_onTick(void* args) {
 
         return false;
     };
-    
+
     return true;
 }
 
@@ -76,7 +77,7 @@ bool toggleTimer() {
             _hasFinished = false;
         }
 
-        _timerTask = _timer.every(1000, timer_onTick);
+        _timerTask = _timer.every(_TIMER_MILLIS, timer_onTick);
     }
     else {
         _timer.cancel(_timerTask);

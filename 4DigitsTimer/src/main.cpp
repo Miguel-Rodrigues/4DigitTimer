@@ -2,7 +2,7 @@
 
 const uint32_t HOLD_ACTION_TRIGGER = 250;
 const uint32_t LONG_ACTION_TRIGGER = 1500;
-uint8_t displayTimer[3] = { 0, 0, 0 };
+uint8_t displayTimer[4] = { 0, 0, 0, 0 };
 uint16_t selectedButton = 0;
 uint32_t selectedButtonHold = 0;
 bool timelessMode = false;

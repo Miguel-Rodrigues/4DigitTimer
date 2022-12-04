@@ -2,7 +2,7 @@
 #include <EEPROM.h>
 
 const int _BUTTONS_PIN = 2;
-const int _UV_ARRAY_PIN = 4;
+const int _BUZZER_PIN = 4;
 
 //Pin connected to ST_CP of 74HC595
 const int _LATCH_PIN = 8;
@@ -12,49 +12,50 @@ const int _CLOCK_PIN = 9;
 const int _DATA_PIN = 10;
 
 // Visual Reference:
-// | | | | | | | | | |    |    |        |       | |  |  |
-// A B C D E F G H | D1   D2   D3       R       S P RST M
-//       FF        |       E            1           F
-// _SEVEN_SEGMENT  | _DIGIT_SELECT _RED_ARRAY _BUTTONS_MASK
+// | | | | | | |  | |    |    |   |     |     |      |     |   | |  |  |   //
+// A B C D E F G  | D1   D2   D3  |     R     |      U     |   S P RST M   //
+//       FF       |       E       |     1     |      1     |       F       //
+// _SEVEN_SEGMENT | _DIGIT_SELECT | _UV_ARRAY | _RED_ARRAY | _BUTTONS_MASK //
 
 // Visual reference of each 7 segment digit (0: ON, 1: OFF)
 // ┌ A ┐
 // F   B
 // ├ G ┤
 // E   C
-// └ D ┘ H
+// └ D ┘ *
 
 //Register address masks
-const uint16_t _SEVEN_SEGMENT = 0xFF00; //1111111100000000
-const uint16_t _DIGIT_SELECT  = 0x00E0; //0000000011100000
+const uint16_t _SEVEN_SEGMENT = 0xFE00; //1111111000000000
+const uint16_t _DIGIT_SELECT  = 0x01C0; //0000000111000000
+const uint16_t _UV_ARRAY      = 0x0020; //0000000000100000
 const uint16_t _RED_ARRAY     = 0x0010; //0000000000010000
 const uint16_t _BUTTONS_MASK  = 0x000F; //0000000000001111
 
 const uint16_t _DIGIT_MAP[15] = {
-    0x0300, //0
-    0x9F00, //1
-    0x2500, //2
-    0x0D00, //3
-    0x9900, //4
-    0x4900, //5
-    0x4100, //6
-    0x1F00, //7
-    0x0100, //8
-    0x0900, //9
-    0x6100, //E
-    0xD500, //n
-    0x8400, //d.
-    0xFD00, //-
-    0xFF00 // <clear>
+    0x0200, //0
+    0x9E00, //1
+    0x2400, //2
+    0x0C00, //3
+    0x9800, //4
+    0x4800, //5
+    0x4000, //6
+    0x1E00, //7
+    0x0000, //8
+    0x0800, //9
+    0x6000, //E
+    0xD400, //n
+    0x8400, //d
+    0xFC00, //-
+    0xFE00  // <clear>
 };
 
-const uint16_t DOT = 0x0100; //.
-
 const uint8_t END[3] = { 10, 11, 12 };
-
 const uint8_t BLANKS[3] = { 13, 13, 13 };
 const uint8_t CLEAR_SCREEN[3] = { 14, 14, 14 };
-const uint32_t BLINK_TIME = 1000;
+
+const uint32_t _BLINK_TIME = 1000;
+const uint16_t _BUZZER_TONE = 1000; //Hz
+
 uint64_t _blinkingMillis = 0;
 bool _isBlinking = false;
 bool _blink = false;
@@ -92,7 +93,7 @@ void initializeDriver() {
     pinMode(_DATA_PIN, OUTPUT);
 
     pinMode(_BUTTONS_PIN, INPUT);
-    pinMode(_UV_ARRAY_PIN, OUTPUT);
+    pinMode(_BUZZER_PIN, OUTPUT);
 
     clearBuffer();
     setLedState(false);
@@ -100,7 +101,7 @@ void initializeDriver() {
 
 const uint8_t* checkBlinkMode(const uint8_t* digits) {
     uint64_t currentMillis = millis();
-    if (_isBlinking && currentMillis >= (_blinkingMillis + BLINK_TIME)) {
+    if (_isBlinking && currentMillis >= (_blinkingMillis + _BLINK_TIME)) {
         _blinkingMillis = currentMillis;
         if (!_holdBlink) {
             _blink = !_blink;
@@ -141,7 +142,7 @@ void writeDigits(const uint8_t digits[]) {
     const uint8_t* value = checkBlinkMode(digits);
 
     for (int i = 0; i < 3; i++) {
-        _digitsBuffer[i] = _DIGIT_MAP[value[2 - i]] | (1 << (i + 5));
+        _digitsBuffer[i] = (_DIGIT_MAP[value[2 - i]]) | (1 << (i + 6));
     }
 }
 
@@ -184,5 +185,9 @@ bool getLedState() {
 void setLedState(bool uvLedsEnabled) {
     _uvLedsEnabled = uvLedsEnabled;
     _buffer = (_buffer & ~_RED_ARRAY) | _uvLedsEnabled ? _RED_ARRAY : 0;
-    digitalWrite(_UV_ARRAY_PIN, _uvLedsEnabled);
+    _buffer = (_buffer & ~_UV_ARRAY)  | _uvLedsEnabled ? 0 :  _UV_ARRAY;
+}
+
+void buzz(int milliseconds) {
+    tone(_BUZZER_PIN, _BUZZER_TONE, milliseconds);
 }

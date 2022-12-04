@@ -34,4 +34,6 @@ bool getLedState();
 
 void setLedState(bool uvLedsEnabled);
 
+void buzz(int milliseconds);
+
 #endif /* DRIVER_H */
