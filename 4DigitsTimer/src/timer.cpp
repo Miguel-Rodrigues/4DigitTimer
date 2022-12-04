@@ -7,8 +7,8 @@ const int _MIN_TIMER = 5;
 const int _DEFAULT_TIMER = 60;
 const int _SYSTEM_MILLIS = 5;
 const int _TIMER_MILLIS = 1000;
-
-Timer<> _timer;
+Timer<1> _systemTimer;
+Timer<1> _timer;
 uintptr_t _timerTask;
 
 int _time = 0;
@@ -30,7 +30,7 @@ void initializeTimers(void (*onTrigger)(), void (*onRefreshSystem)()) {
     _onTrigger = onTrigger;
     _onRefreshSystem = onRefreshSystem;
 
-    _timer.every(_SYSTEM_MILLIS, refreshSystemEvent);
+    _systemTimer.every(_SYSTEM_MILLIS, refreshSystemEvent);
 }
 
 bool timer_onTick(void* args) {
@@ -90,6 +90,7 @@ bool toggleTimer() {
 }
 
 void tick() {
+    _systemTimer.tick<void>();
     _timer.tick<void>();
 }
 
