@@ -5,7 +5,7 @@ const int _FAST_SKIPPING_STEPS = 10;
 const int _MAX_TIMER = 999;
 const int _MIN_TIMER = 5;
 const int _DEFAULT_TIMER = 60;
-const int _SYSTEM_MILLIS = 5;
+const int _SYSTEM_MILLIS = 1;
 const int _TIMER_MILLIS = 1000;
 Timer<1> _systemTimer;
 Timer<1> _timer;

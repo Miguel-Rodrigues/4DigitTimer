@@ -1,32 +1,6 @@
 #include "includes.hpp"
 #include <EEPROM.h>
 
-#ifdef ENV_UNO
-    //Pin connected to ST_CP of 74HC595
-    const int _LATCH_PIN = 8;
-    //Pin connected to SH_CP of 74HC595
-    const int _CLOCK_PIN = 9;
-    //Pin connected to DS of 74HC595
-    const int _DATA_PIN = 10;
-    //Pin connected to the keypad
-    const int _BUTTONS_PIN = 11;
-    //Pin connected to the buzzer
-    const int _BUZZER_PIN = 12;
-#endif
-
-#ifdef ENV_ATTINY85
-    //Pin connected to ST_CP of 74HC595
-    const int _LATCH_PIN = 2;
-    //Pin connected to SH_CP of 74HC595
-    const int _CLOCK_PIN = 3;
-    //Pin connected to DS of 74HC595
-    const int _DATA_PIN = 7;
-    //Pin connected to the keypad
-    const int _BUTTONS_PIN = 5;
-    //Pin connected to the buzzer
-    const int _BUZZER_PIN = 6;
-#endif
-
 // Visual Reference:
 // | | | | | | |  | |    |    |   |     |     |      |     |   | |  |  |   //
 // A B C D E F G  | D1   D2   D3  |     R     |      U     |   S P RST M   //
@@ -104,12 +78,12 @@ void clearBuffer() {
 }
 
 void initializeDriver() {
-    pinMode(_LATCH_PIN, OUTPUT);
-    pinMode(_CLOCK_PIN, OUTPUT);
-    pinMode(_DATA_PIN, OUTPUT);
+    pinMode(LATCH_PIN, OUTPUT);
+    pinMode(CLOCK_PIN, OUTPUT);
+    pinMode(DATA_PIN, OUTPUT);
 
-    pinMode(_BUTTONS_PIN, INPUT);
-    pinMode(_BUZZER_PIN, OUTPUT);
+    pinMode(BUTTONS_PIN, INPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
 
     clearBuffer();
     setLedState(false);
@@ -143,12 +117,12 @@ void flushRegister() {
 
     // take the latchPin low so;
     // the LEDs don't change while you're sending in bits:
-    digitalWrite(_LATCH_PIN, LOW);
+    digitalWrite(LATCH_PIN, LOW);
     // shift out the bits:
-    shiftOut(_DATA_PIN, _CLOCK_PIN, LSBFIRST, _buffer);
-    shiftOut(_DATA_PIN, _CLOCK_PIN, LSBFIRST, _buffer >> 8);
+    shiftOut(DATA_PIN, CLOCK_PIN, LSBFIRST, _buffer);
+    shiftOut(DATA_PIN, CLOCK_PIN, LSBFIRST, _buffer >> 8);
     //take the latch pin high so the LEDs will light up:
-    digitalWrite(_LATCH_PIN, HIGH);
+    digitalWrite(LATCH_PIN, HIGH);
 
     _digitsPointer = (_digitsPointer + 1) % 3;
     _buttonPointer = (_buttonPointer + 1) % 4;
@@ -164,7 +138,7 @@ void writeDigits(const uint8_t digits[]) {
 
 void checkButtonsStates()
 {
-    bool isButtonDown = (bool) digitalRead(_BUTTONS_PIN);
+    bool isButtonDown = (bool) digitalRead(BUTTONS_PIN);
     bool currentState = keypad[_buttonPointer]->getState();
 
     keypad[_buttonPointer]->setState(isButtonDown);
@@ -205,5 +179,5 @@ void setLedState(bool uvLedsEnabled) {
 }
 
 void buzz(int milliseconds) {
-    tone(_BUZZER_PIN, _BUZZER_TONE, milliseconds);
+    tone(BUZZER_PIN, _BUZZER_TONE, milliseconds);
 }
