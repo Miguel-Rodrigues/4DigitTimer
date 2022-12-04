@@ -1,15 +1,31 @@
 #include "includes.hpp"
 #include <EEPROM.h>
 
-const int _BUTTONS_PIN = 2;
-const int _BUZZER_PIN = 4;
+#ifdef ENV_UNO
+    //Pin connected to ST_CP of 74HC595
+    const int _LATCH_PIN = 8;
+    //Pin connected to SH_CP of 74HC595
+    const int _CLOCK_PIN = 9;
+    //Pin connected to DS of 74HC595
+    const int _DATA_PIN = 10;
+    //Pin connected to the keypad
+    const int _BUTTONS_PIN = 11;
+    //Pin connected to the buzzer
+    const int _BUZZER_PIN = 12;
+#endif
 
-//Pin connected to ST_CP of 74HC595
-const int _LATCH_PIN = 8;
-//Pin connected to SH_CP of 74HC595
-const int _CLOCK_PIN = 9;
-//Pin connected to DS of 74HC595
-const int _DATA_PIN = 10;
+#ifdef ENV_ATTINY85
+    //Pin connected to ST_CP of 74HC595
+    const int _LATCH_PIN = 2;
+    //Pin connected to SH_CP of 74HC595
+    const int _CLOCK_PIN = 3;
+    //Pin connected to DS of 74HC595
+    const int _DATA_PIN = 7;
+    //Pin connected to the keypad
+    const int _BUTTONS_PIN = 5;
+    //Pin connected to the buzzer
+    const int _BUZZER_PIN = 6;
+#endif
 
 // Visual Reference:
 // | | | | | | |  | |    |    |   |     |     |      |     |   | |  |  |   //
