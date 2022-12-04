@@ -9,7 +9,7 @@ void increaseTimer(bool fastSkipping);
 
 void decreaseTimer(bool fastSkipping);
 
-void resetTimer(bool resetToDefault = false);
+bool resetTimer(bool resetToDefault = false);
 
 bool toggleTimer();
 

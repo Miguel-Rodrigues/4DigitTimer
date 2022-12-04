@@ -57,7 +57,7 @@ void decreaseTimer(bool fastSkipping) {
     _time = max(_MIN_TIMER, _time);
 }
 
-void resetTimer(bool resetToDefault) {
+bool resetTimer(bool resetToDefault) {
     _isTicking = false;
     _hasFinished = true;
     _timer.cancel(_timerTask);
@@ -65,7 +65,10 @@ void resetTimer(bool resetToDefault) {
 
     if (resetToDefault &&  _time != _DEFAULT_TIMER) {
         _time = EEPROM.put(0, _DEFAULT_TIMER);
+        return true;
     }
+
+    return false;
 }
 
 bool toggleTimer() {

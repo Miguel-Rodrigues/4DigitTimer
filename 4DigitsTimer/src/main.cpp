@@ -1,21 +1,32 @@
 #include "includes.hpp"
 
-const uint32_t HOLD_ACTION_TRIGGER = 250;
-const uint32_t LONG_ACTION_TRIGGER = 1500;
+const uint16_t HOLD_ACTION_TRIGGER = 250;
+const uint16_t LONG_ACTION_TRIGGER = 1500;
+const uint16_t BUZZER_ALARM_TIME = 1000;
+const uint32_t BUZZER_BEEP_TIME = 50;
 uint8_t displayTimer[4] = { 0, 0, 0, 0 };
 uint16_t selectedButton = 0;
 uint32_t selectedButtonHold = 0;
 bool timelessMode = false;
 bool refreshScreen = true;
+bool canBuzz = true;
 
 void resetTimerEvent(bool resetToDefault) {
+    if (canBuzz) buzz(BUZZER_BEEP_TIME);
+    canBuzz = false;
     timelessMode = false;
     refreshScreen = true;
-    resetTimer(resetToDefault);
+
+    if (resetTimer(resetToDefault)) {
+        buzz(BUZZER_BEEP_TIME);
+    };
     setLedState(false);
 }
 
 void increaseTimerEvent(bool fastSkipping) {
+    if (canBuzz) buzz(BUZZER_BEEP_TIME);
+    canBuzz = false;
+
     if (!timelessMode) {
         fastSkipping |= isTicking();
         increaseTimer(fastSkipping);
@@ -28,6 +39,9 @@ void increaseTimerEvent(bool fastSkipping) {
 }
 
 void decreaseTimerEvent(bool fastSkipping) {
+    if (canBuzz) buzz(BUZZER_BEEP_TIME);
+    canBuzz = false;
+
     if (!timelessMode) {
         fastSkipping |= isTicking();
         decreaseTimer(fastSkipping);
@@ -40,6 +54,8 @@ void decreaseTimerEvent(bool fastSkipping) {
 }
 
 void toggleTimerEvent() {
+    buzz(BUZZER_BEEP_TIME);
+
     if (!timelessMode) {
         setLedState(toggleTimer());
     }
@@ -52,6 +68,8 @@ void toggleTimerEvent() {
 void enableTimelessMode()
 {
     if (!timelessMode) {
+        buzz(BUZZER_BEEP_TIME);
+    
         timelessMode = true;
         refreshScreen = false;
 
@@ -71,6 +89,7 @@ void onAlarmTrigger() {
     displayTimer[0] = END[0];
     displayTimer[1] = END[1];
     displayTimer[2] = END[2];
+    buzz(BUZZER_ALARM_TIME);
 }
 
 void refresh() {
@@ -99,6 +118,7 @@ bool canPerformAction(Button* button) {
             if (!timelessMode) {
                 refreshScreen = true;
             }
+
             return true;
         };
     }
@@ -111,6 +131,8 @@ void releaseAction(Button* button) {
         selectedButton = 0;
         selectedButtonHold = 0;
     }
+
+    canBuzz = true;
 }
 
 void initializeEventListeners() {
