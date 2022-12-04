@@ -1230,7 +1230,7 @@
   (symbol (lib_id "Connector:Conn_01x11_Male") (at 106.68 97.79 0) (mirror y) (unit 1)
     (in_bom yes) (on_board yes)
     (uuid 9dc3fd2f-872e-46ac-a79f-3b974eeefcaa)
-    (property "Reference" "J4" (id 0) (at 87.63 78.74 0)
+    (property "Reference" "J5" (id 0) (at 87.63 78.74 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "~" (id 1) (at 87.63 81.28 0)
