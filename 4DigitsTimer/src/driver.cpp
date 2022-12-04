@@ -184,8 +184,8 @@ bool getLedState() {
 
 void setLedState(bool uvLedsEnabled) {
     _uvLedsEnabled = uvLedsEnabled;
-    _buffer = (_buffer & ~_RED_ARRAY) | _uvLedsEnabled ? _RED_ARRAY : 0;
-    _buffer = (_buffer & ~_UV_ARRAY)  | _uvLedsEnabled ? 0 :  _UV_ARRAY;
+    _buffer = (_buffer & ~_RED_ARRAY) | (_uvLedsEnabled ? 0 : _RED_ARRAY);
+    _buffer = (_buffer & ~_UV_ARRAY)  | (_uvLedsEnabled ? _UV_ARRAY :  0);
 }
 
 void buzz(int milliseconds) {
