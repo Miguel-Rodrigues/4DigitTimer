@@ -43,10 +43,10 @@ const uint8_t END[3] = { 10, 11, 12 };
 const uint8_t BLANKS[3] = { 13, 13, 13 };
 const uint8_t CLEAR_SCREEN[3] = { 14, 14, 14 };
 
-const uint32_t _BLINK_TIME = 1000;
-const uint16_t _BUZZER_TONE = 1000; //Hz
+const uint32_t _BLINK_TIME = 500;
 
 uint64_t _blinkingMillis = 0;
+uint32_t _buzzerTimer = 0;
 bool _isBlinking = false;
 bool _blink = false;
 bool _holdBlink = false;
@@ -110,6 +110,14 @@ const uint8_t* checkBlinkMode(const uint8_t* digits) {
     return digits;
 }
 
+void checkBuzzer() {
+    uint32_t currentMillis = millis();
+    if (currentMillis > _buzzerTimer) {
+        digitalWrite(BUZZER_PIN, LOW);
+        _buzzerTimer = 0;
+    }
+}
+
 void flushRegister() {
     const uint16_t _DIGITS_MASK = _SEVEN_SEGMENT | _DIGIT_SELECT;
     _buffer = (_buffer & ~_DIGITS_MASK) | _digitsBuffer[_digitsPointer];
@@ -126,6 +134,8 @@ void flushRegister() {
 
     _digitsPointer = (_digitsPointer + 1) % 3;
     _buttonPointer = (_buttonPointer + 1) % 4;
+
+    checkBuzzer();
 }
 
 void writeDigits(const uint8_t digits[]) {
@@ -179,5 +189,6 @@ void setLedState(bool uvLedsEnabled) {
 }
 
 void buzz(int milliseconds) {
-    tone(BUZZER_PIN, _BUZZER_TONE, milliseconds);
+    digitalWrite(BUZZER_PIN, HIGH);
+    _buzzerTimer = millis() + milliseconds;
 }

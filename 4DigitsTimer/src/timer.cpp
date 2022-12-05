@@ -9,6 +9,7 @@ const int _SYSTEM_MILLIS = 1;
 const int _TIMER_MILLIS = 1000;
 Timer<1> _systemTimer;
 Timer<1> _timer;
+Timer<1> _BuzzerTimer;
 uintptr_t _timerTask;
 
 int _time = 0;
